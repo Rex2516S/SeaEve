@@ -34,7 +34,7 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
   return (
     <div className="w-full max-w-2xl px-4 flex flex-col items-center animate-in fade-in zoom-in duration-500">
       <div className="mb-8 md:mb-12">
-        <Logo size="lg" className="md:text-7xl" />
+        <Logo size="lg" />
       </div>
 
       <form onSubmit={handleSubmit} className="w-full relative group z-10">
