@@ -40,8 +40,8 @@ export const Logo: React.FC<LogoProps> = ({ className = '', size = 'lg' }) => {
           src={LOGO_SRC} 
           alt="SeaEve Logo" 
           className={`${imgClasses[size]} object-contain drop-shadow-sm transition-opacity duration-300`}
-          onError={(e) => {
-            console.error(`Failed to load logo at ${LOGO_SRC}. Please check if the file 'Logo.png' exists in the root directory.`);
+          onError={() => {
+            // Silently fail to text-only mode if image is missing
             setImgError(true);
           }}
         />
