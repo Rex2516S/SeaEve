@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Search, Globe, X } from 'lucide-react';
+import { Search, Globe, X, Check } from 'lucide-react';
 import { Logo } from './Logo';
 import { SearchEngine, EngineId } from '../types';
 
 interface SearchInterfaceProps {
   engines: SearchEngine[];
-  onSearch: (query: string, engineId: EngineId) => void;
+  onSearch: (query: string, engineIds: EngineId[]) => void;
   initialQuery?: string;
 }
 
@@ -15,18 +15,31 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
   initialQuery = '' 
 }) => {
   const [query, setQuery] = useState(initialQuery);
-  const [activeEngineId, setActiveEngineId] = useState<EngineId | null>(null);
+  // Default to the first enabled engine if available
+  const [activeEngineIds, setActiveEngineIds] = useState<EngineId[]>(() => {
+    const first = engines.find(e => e.isEnabled);
+    return first ? [first.id] : [];
+  });
 
   // Filter only enabled engines
   const enabledEngines = engines.filter(e => e.isEnabled);
-  
-  // Default to first enabled or google if none
-  const currentEngineId = activeEngineId || (enabledEngines.length > 0 ? enabledEngines[0].id : 'google');
+
+  const toggleEngine = (id: EngineId) => {
+    setActiveEngineIds(prev => {
+      if (prev.includes(id)) {
+        // Prevent deselecting the last one
+        if (prev.length === 1) return prev;
+        return prev.filter(e => e !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      onSearch(query, currentEngineId);
+    if (query.trim() && activeEngineIds.length > 0) {
+      onSearch(query, activeEngineIds);
       setQuery('');
     }
   };
@@ -47,7 +60,7 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Search ${enabledEngines.find(e => e.id === currentEngineId)?.name || '...'} `}
+            placeholder={`Search on ${activeEngineIds.length} engine${activeEngineIds.length > 1 ? 's' : ''}...`}
             className="w-full py-4 px-4 bg-transparent border-none outline-none text-lg text-gray-800 dark:text-gray-100 placeholder-gray-400"
             autoFocus
           />
@@ -68,30 +81,36 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({
         {enabledEngines.length === 0 ? (
           <p className="text-center text-sm text-red-500">Please enable at least one search engine in the sidebar.</p>
         ) : (
-          <div className="flex flex-wrap items-center justify-center gap-3">
-             {enabledEngines.map((engine) => (
-               <button
-                key={engine.id}
-                type="button"
-                onClick={() => setActiveEngineId(engine.id)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border
-                  ${currentEngineId === engine.id 
-                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 shadow-sm scale-105' 
-                    : 'bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'}
-                `}
-               >
-                  <Globe size={14} />
-                  {engine.name}
-               </button>
-             ))}
+          <div className="flex flex-col items-center gap-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Select Engines (Multi-select)</p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {enabledEngines.map((engine) => {
+                const isActive = activeEngineIds.includes(engine.id);
+                return (
+                  <button
+                    key={engine.id}
+                    type="button"
+                    onClick={() => toggleEngine(engine.id)}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border select-none
+                      ${isActive 
+                        ? 'bg-blue-500 border-blue-600 text-white shadow-md scale-105' 
+                        : 'bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800'}
+                    `}
+                  >
+                    {isActive ? <Check size={14} /> : <Globe size={14} />}
+                    {engine.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
 
       <div className="mt-12 text-center">
         <p className="text-sm text-gray-400 dark:text-zinc-600 font-light">
-          SeaEve is a privacy-first frontend. We do not track your data.
+          SeaEve is a privacy-first frontend. Select multiple engines to compare results.
         </p>
       </div>
     </div>

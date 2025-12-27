@@ -11,10 +11,10 @@ import { SearchEngine, HistoryItem, EngineId } from './types';
 const generateId = () => Math.random().toString(36).substring(2, 9);
 
 const DEFAULT_ENGINES: SearchEngine[] = [
-  { id: 'google', name: 'Google', baseUrl: 'https://www.google.com/search?igu=1&q=', isEnabled: true }, // Added igu=1 for Google generic workaround attempt
+  { id: 'google', name: 'Google', baseUrl: 'https://www.google.com/search?igu=1&q=', isEnabled: true }, 
   { id: 'duckduckgo', name: 'DuckDuckGo', baseUrl: 'https://duckduckgo.com/?q=', isEnabled: true },
   { id: 'bing', name: 'Bing', baseUrl: 'https://www.bing.com/search?q=', isEnabled: true },
-  { id: 'baidu', name: 'Baidu', baseUrl: 'https://www.baidu.com/s?wd=', isEnabled: false },
+  { id: 'baidu', name: 'Baidu', baseUrl: 'https://www.baidu.com/s?wd=', isEnabled: true },
 ];
 
 type ViewMode = 'home' | 'results';
@@ -27,7 +27,7 @@ const App: React.FC = () => {
   
   const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [currentQuery, setCurrentQuery] = useState('');
-  const [currentEngineId, setCurrentEngineId] = useState<EngineId>('google');
+  const [currentEngineIds, setCurrentEngineIds] = useState<EngineId[]>([]);
 
   // Initialize missing engines
   useEffect(() => {
@@ -40,32 +40,32 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleSearch = (query: string, engineId: EngineId) => {
-    const engine = engines.find(e => e.id === engineId);
-    if (!engine) return;
-
+  const handleSearch = (query: string, engineIds: EngineId[]) => {
     // Add to history
     const newHistoryItem: HistoryItem = {
       id: generateId(),
       query,
       timestamp: Date.now(),
-      engineId
+      engineIds
     };
     
     setHistory([newHistoryItem, ...history].slice(0, 50));
 
     // Update state to show results
     setCurrentQuery(query);
-    setCurrentEngineId(engineId);
+    setCurrentEngineIds(engineIds);
     setViewMode('results');
   };
 
-  const handleHistoryClick = (query: string, engineId: EngineId) => {
-      // Ensure engine is enabled or fallback
-      const engineExists = engines.find(e => e.id === engineId && e.isEnabled);
-      const targetEngine = engineExists ? engineId : (engines.find(e => e.isEnabled)?.id || 'google');
+  const handleHistoryClick = (query: string, engineIds: EngineId[]) => {
+      // Ensure requested engines are enabled or valid, fallback to enabled ones if needed
+      const validIds = engineIds.filter(id => engines.some(e => e.id === id && e.isEnabled));
       
-      handleSearch(query, targetEngine as EngineId);
+      const targetIds = validIds.length > 0 
+        ? validIds 
+        : [engines.find(e => e.isEnabled)?.id || 'google'] as EngineId[];
+      
+      handleSearch(query, targetIds);
       // Close sidebar on mobile if open
       setIsSidebarOpen(false);
   };
@@ -117,7 +117,7 @@ const App: React.FC = () => {
             <SearchInterface 
               engines={engines} 
               onSearch={handleSearch} 
-              initialQuery={currentQuery} // Pass current query if we went back from results
+              initialQuery={currentQuery} 
             />
           </main>
         </>
@@ -125,7 +125,7 @@ const App: React.FC = () => {
         <SearchResultView 
           engines={engines}
           query={currentQuery}
-          engineId={currentEngineId}
+          engineIds={currentEngineIds}
           onSearch={handleSearch}
           onMenuClick={() => setIsSidebarOpen(true)}
           onHomeClick={() => {

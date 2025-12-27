@@ -13,7 +13,7 @@ export interface HistoryItem {
   id: string;
   query: string;
   timestamp: number;
-  engineId: EngineId;
+  engineIds: EngineId[];
 }
 
 export interface AppSettings {

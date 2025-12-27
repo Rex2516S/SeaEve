@@ -1,5 +1,5 @@
 import React from 'react';
-import { HistoryItem, ThemeMode, SearchEngine } from '../types';
+import { HistoryItem, ThemeMode, SearchEngine, EngineId } from '../types';
 import { 
   History, 
   Trash2, 
@@ -10,7 +10,8 @@ import {
   X,
   Search,
   CheckCircle2,
-  Circle
+  Circle,
+  Layers
 } from 'lucide-react';
 import { Logo } from './Logo';
 
@@ -20,7 +21,7 @@ interface SidebarProps {
   history: HistoryItem[];
   onClearHistory: () => void;
   onDeleteHistoryItem: (id: string) => void;
-  onHistoryClick: (query: string, engineId: string) => void;
+  onHistoryClick: (query: string, engineIds: EngineId[]) => void;
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   engines: SearchEngine[];
@@ -116,32 +117,49 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             ) : (
               <div className="space-y-1">
-                {history.map((item) => (
-                  <div 
-                    key={item.id}
-                    className="group flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-                  >
-                    <button 
-                      className="flex-1 text-left flex items-center gap-3 overflow-hidden"
-                      onClick={() => onHistoryClick(item.query, item.engineId)}
+                {history.map((item) => {
+                  // Fallback for old history items that might have 'engineId' instead of 'engineIds'
+                  const engineIds = item.engineIds || [(item as any).engineId].filter(Boolean);
+                  const count = engineIds.length;
+                  const firstEngineName = engines.find(e => e.id === engineIds[0])?.name || 'Unknown';
+
+                  return (
+                    <div 
+                      key={item.id}
+                      className="group flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
                     >
-                      <Search size={14} className="text-gray-400 min-w-[14px]" />
-                      <div className="flex flex-col truncate">
-                         <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{item.query}</span>
-                         <span className="text-[10px] text-gray-400 capitalize">{item.engineId} &bull; {new Date(item.timestamp).toLocaleDateString()}</span>
-                      </div>
-                    </button>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteHistoryItem(item.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 transition-all"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
+                      <button 
+                        className="flex-1 text-left flex items-center gap-3 overflow-hidden"
+                        onClick={() => onHistoryClick(item.query, engineIds)}
+                      >
+                        <Search size={14} className="text-gray-400 min-w-[14px]" />
+                        <div className="flex flex-col truncate">
+                           <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{item.query}</span>
+                           <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                             {count > 1 ? (
+                               <>
+                                <Layers size={10} />
+                                {count} Engines ({firstEngineName}...)
+                               </>
+                             ) : (
+                               firstEngineName
+                             )}
+                              &bull; {new Date(item.timestamp).toLocaleDateString()}
+                           </span>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteHistoryItem(item.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>
