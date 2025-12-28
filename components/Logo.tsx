@@ -7,7 +7,7 @@ interface LogoProps {
 
 // Updated to Capitalized 'Logo.png' based on your description.
 // Ensure the file in your root folder is exactly named "Logo.png"
-const LOGO_SRC = "/Logo.png"; 
+const LOGO_SRC = "public/Logo.png"; 
 
 export const Logo: React.FC<LogoProps> = ({ className = '', size = 'lg' }) => {
   const [imgError, setImgError] = useState(false);
